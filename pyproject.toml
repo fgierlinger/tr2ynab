@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tr2ynab"
+version = "0.2.0"
+description = "A tool to sync Trade Republic transactions with YNAB"
+authors = [
+    { name = "Frédéric Gierlinger", email = "frederic.gierlinger@gmail.com" }
+]
+dependencies = [
+    "pytr",
+    "ynab"
+]
+[project.scripts]
+tr2ynab = "tr2ynab.__main__:main"
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "v$version"
+version_scheme = "semver2"
+version_provider = "pep621"
+update_changelog_on_bump = true
