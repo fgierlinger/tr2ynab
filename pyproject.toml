@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tr2ynab"
-version = "0.3.0"
+version = "0.4.0"
 description = "A tool to sync Trade Republic transactions with YNAB"
 authors = [
     { name = "Frédéric Gierlinger", email = "frederic.gierlinger@gmail.com" }
