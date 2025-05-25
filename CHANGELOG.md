@@ -1,3 +1,9 @@
+## v1.0.0 (2025-05-25)
+
+### Feat
+
+- add LICENSE and README files with project details and usage instructions
+
 ## v0.4.0 (2025-05-24)
 
 ### Feat
