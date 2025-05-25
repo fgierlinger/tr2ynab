@@ -1,3 +1,29 @@
+"""
+This module provides functionality to fetch transactions from Trade Republic and
+push them to YNAB (You Need A Budget). It includes classes and functions to
+handle transactions, manage configuration, and interact with the YNAB API.
+
+Classes:
+    - PyTRExit: Custom exception to handle pytr.dl exit behavior.
+    - Transaction: Represents a financial transaction with attributes such as
+      date, type, value, and more.
+    - YNABSettings: Stores YNAB configuration details like budget ID, access
+      token, and account ID.
+
+Functions:
+    - get_last_import_timestamp: Retrieves the last import timestamp from the
+      configuration file.
+    - save_last_import_timestamp: Saves the last import timestamp to the
+      configuration file.
+    - tr_load_transactions: Fetches transactions from Trade Republic since the
+      last import timestamp.
+    - ynab_push_transactions: Pushes transactions to YNAB using the provided
+      YNAB settings.
+
+Constants:
+    - CONFIG_DIR: Path to the configuration directory.
+    - LAST_IMPORT_FILE: Path to the file storing the last import timestamp.
+"""
 import asyncio
 from dataclasses import dataclass
 import datetime
@@ -18,7 +44,6 @@ LAST_IMPORT_FILE = os.path.join(CONFIG_DIR, "last_import_timestamp.txt")
 
 class PyTRExit(Exception):
     """Custom exception to exit pytr.dl."""
-    pass
 
 
 def fake__exit(code=None):
@@ -31,16 +56,16 @@ builtins.exit = fake__exit
 
 
 @dataclass
-class Transaction:
+class Transaction:  # pylint: disable=too-many-instance-attributes
     """Transaction class."""
-    Date: datetime.datetime
-    Type: str
-    Value: float
-    Note: str
-    ISIN: str | None
-    Shares: str | None
-    Fees: str | None
-    Taxes: str | None
+    Date: datetime.datetime  # pylint: disable=invalid-name
+    Type: str  # pylint: disable=invalid-name
+    Value: float  # pylint: disable=invalid-name
+    Note: str  # pylint: disable=invalid-name
+    ISIN: str | None  # pylint: disable=invalid-name
+    Shares: str | None  # pylint: disable=invalid-name
+    Fees: str | None  # pylint: disable=invalid-name
+    Taxes: str | None  # pylint: disable=invalid-name
 
     def __post_init__(self):
         if isinstance(self.Date, str):
@@ -102,10 +127,11 @@ def tr_load_transactions(phone_no: str, pin: str) -> List[Transaction]:
     except PyTRExit as e:
         if e.args[0] != 0:
             raise e
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         print(f"Error in dl.dl_loop(): {e}")
 
-    with open(f"{tempdir}/account_transactions.csv", "r", encoding='utf-8') as f:  # file has csv ending but is json
+    # file has csv ending but is json
+    with open(f"{tempdir}/account_transactions.csv", "r", encoding='utf-8') as f:
         data = [Transaction(**(json.loads(line))) for line in f.readlines()]
 
     # Save the current timestamp as the last import timestamp
