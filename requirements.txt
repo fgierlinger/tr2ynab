@@ -5,4 +5,4 @@
 # includes the fix.
 #pytr ~= 0.4.2
 pytr @ git+https://github.com/pytr-org/pytr@f30b2e9
-ynab
+ynab ~= 1.4.0
