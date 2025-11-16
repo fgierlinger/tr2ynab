@@ -29,11 +29,12 @@ from dataclasses import dataclass
 import datetime
 import json
 import builtins
+from pathlib import Path
 import shutil
 import tempfile
 import os
 from typing import List
-from pytr.dl import DL
+from pytr.dl import Timeline, TransactionExporter, Event
 from pytr.account import login
 import ynab
 
@@ -99,39 +100,39 @@ def save_last_import_timestamp(timestamp: datetime.datetime) -> None:
         f.write(timestamp.isoformat())
 
 
-def tr_load_transactions(phone_no: str, pin: str) -> List[Transaction]:
+def tr_load_transactions(phone_no: str, pin: str, lang: str = "en") -> List[Transaction]:
     """Load transactions from Trade Republic."""
     last_import_timestamp = get_last_import_timestamp()
     print(f"Fetching transactions since: {last_import_timestamp}")
 
-    tempdir = tempfile.mkdtemp()
-    dl = DL(
+    tempdir = Path(tempfile.mkdtemp())
+    tl = Timeline(
         login(
             phone_no=phone_no,
             pin=pin,
             store_credentials=True
         ),
         output_path=tempdir,
-        filename_fmt="{iso_date} {time} {title}",
-        since_timestamp=last_import_timestamp.timestamp(),
-        max_workers=8,
-        universal_filepath=False,
-        lang="en",
-        date_with_time=True,
-        decimal_localization=False,
-        sort_export=False,
-        format_export="json"
+        not_before=last_import_timestamp.timestamp()
     )
-    try:
-        asyncio.run(dl.dl_loop())
-    except PyTRExit as e:
-        if e.args[0] != 0:
-            raise e
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        print(f"Error in dl.dl_loop(): {e}")
+    asyncio.run(tl.tl_loop())
+    events = tl.events
+
+    account_transactions_file = tempdir / ("account_transactions." + "json")
+    with open(account_transactions_file, "w", encoding="utf-8") as f:
+        TransactionExporter(
+            lang=lang,
+            date_with_time=True,
+            decimal_localization=True
+        ).export(
+            f,
+            [Event.from_dict(item) for item in events],
+            sort=False,
+            format="json"
+        )
 
     # file has csv ending but is json
-    with open(f"{tempdir}/account_transactions.csv", "r", encoding='utf-8') as f:
+    with open(account_transactions_file, "r", encoding='utf-8') as f:
         data = [Transaction(**(json.loads(line))) for line in f.readlines()]
 
     # Save the current timestamp as the last import timestamp
@@ -157,7 +158,7 @@ def ynab_push_transactions(transactions: List[Transaction], ynab_settings: YNABS
             budget_id=ynab_settings.budget_id,
             account_id=ynab_settings.account_id,
             date=transaction.Date.strftime("%Y-%m-%d"),
-            amount=int(transaction.Value * 1000),  # YNAB expects milliunits
+            amount=int(float(transaction.Value) * 1000),  # YNAB expects milliunits
             payee_name=transaction.Note,
             cleared="cleared",
             approved=False

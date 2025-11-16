@@ -1,3 +1,9 @@
+## v1.0.1 (2025-11-16)
+
+### Fix
+
+- use export_transaction logic from pytr to fix KeyError
+
 ## v1.0.0 (2025-05-25)
 
 ### Feat
