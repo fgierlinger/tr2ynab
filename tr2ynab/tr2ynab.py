@@ -146,19 +146,40 @@ def tr_load_transactions(phone_no: str, pin: str, lang: str = "en") -> List[Tran
     return data
 
 
+def convert_value_string_to_milliunits(value: str) -> int:
+    """Convert a value string to milliunits for YNAB.
+
+    Args:
+        value (str): value string with optional commas and decimal point.
+
+    Returns:
+        int: value in milliunits.
+    """
+    # YNAB expects amounts in milliunits (e.g., $1.00 = 1000). Trade
+    # Republic retuns value strings with commas as thousands separators and
+    # dots as decimal separators. If the comma value is 00, the dot is omitted.
+    value_cleaned = value.replace(',', '')
+    if '.' in value_cleaned:
+        whole, fraction = value_cleaned.split('.')
+        fraction = (fraction + '000')[:3]  # Ensure three decimal places
+    else:
+        whole = value_cleaned
+        fraction = '000'
+    return int(whole) * 1000 + int(fraction)
+
+
 def ynab_push_transactions(transactions: List[Transaction], ynab_settings: YNABSettings) -> None:
     """Push transactions to YNAB."""
     configuration = ynab.Configuration(
         access_token=ynab_settings.access_token
     )
-
     ynab_transactions = []
     for transaction in transactions:
         ynab_transactions.append(ynab.NewTransaction(
             budget_id=ynab_settings.budget_id,
             account_id=ynab_settings.account_id,
             date=transaction.Date.strftime("%Y-%m-%d"),
-            amount=int(float(transaction.Value) * 1000),  # YNAB expects milliunits
+            amount=convert_value_string_to_milliunits(transaction.Value),
             payee_name=transaction.Note,
             cleared="cleared",
             approved=False
