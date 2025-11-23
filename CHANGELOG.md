@@ -1,3 +1,9 @@
+## v1.0.2 (2025-11-23)
+
+### Fix
+
+- add convert_value_string_to_milliunits function and corresponding tests #4
+
 ## v1.0.1 (2025-11-16)
 
 ### Fix
