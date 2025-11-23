@@ -165,6 +165,9 @@ def convert_value_string_to_milliunits(value: str) -> int:
     else:
         whole = value_cleaned
         fraction = '000'
+
+    if whole.startswith('-'):
+        return int(whole) * 1000 - int(fraction)
     return int(whole) * 1000 + int(fraction)
 
 

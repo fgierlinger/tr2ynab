@@ -1,3 +1,9 @@
+## v1.0.3 (2025-11-23)
+
+### Fix
+
+- enhance convert_value_string_to_milliunits for negative values and add tests
+
 ## v1.0.2 (2025-11-23)
 
 ### Fix
