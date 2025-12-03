@@ -36,10 +36,16 @@ phone_no = +491234567890
 pin = 1234
 
 [YNAB]
+budget_id = test_budget_id
+access_token = test_access_token
+account_id = test_account_id
 
 """)
     Settings.load(tempfile)
     assert Settings.get().config['main']['last_import_file'] == "./last_import_timestamp.txt"
     assert Settings.get().config.get('TradeRepublic', 'phone_no') == "+491234567890"
     assert Settings.get().config.get('TradeRepublic', 'pin') == "1234"
+    assert Settings.get().config.get('YNAB', 'budget_id') == "test_budget_id"
+    assert Settings.get().config.get('YNAB', 'access_token') == "test_access_token"
+    assert Settings.get().config.get('YNAB', 'account_id') == "test_account_id"
     os.remove(tempfile)

@@ -32,16 +32,11 @@ import builtins
 from pathlib import Path
 import shutil
 import tempfile
-import os
 from typing import List
 from pytr.dl import Timeline, TransactionExporter, Event
 from pytr.account import login
 import ynab
 import configparser
-
-
-CONFIG_DIR = os.path.expanduser("~/.config/tr2ynab")
-
 
 
 class PyTRExit(Exception):
@@ -108,14 +103,6 @@ class Settings:
         if cls._instance is None:
             raise RuntimeError("Settings not loaded. Call Settings.load(config_path) first.")
         return cls._instance
-
-
-@dataclass
-class YNABSettings:
-    """YNAB settings."""
-    budget_id: str
-    access_token: str
-    account_id: str
 
 
 def get_last_import_timestamp() -> datetime.datetime:
@@ -209,16 +196,16 @@ def convert_value_string_to_milliunits(value: str) -> int:
     return int(whole) * 1000 + int(fraction)
 
 
-def ynab_push_transactions(transactions: List[Transaction], ynab_settings: YNABSettings) -> None:
+def ynab_push_transactions(transactions: List[Transaction]) -> None:
     """Push transactions to YNAB."""
     configuration = ynab.Configuration(
-        access_token=ynab_settings.access_token
+        access_token=Settings.get().config.get('YNAB', 'access_token')
     )
     ynab_transactions = []
     for transaction in transactions:
         ynab_transactions.append(ynab.NewTransaction(
-            budget_id=ynab_settings.budget_id,
-            account_id=ynab_settings.account_id,
+            budget_id=Settings.get().config.get('YNAB', 'budget_id'),
+            account_id=Settings.get().config.get('YNAB', 'account_id'),
             date=transaction.Date.strftime("%Y-%m-%d"),
             amount=convert_value_string_to_milliunits(transaction.Value),
             payee_name=transaction.Note,
@@ -230,7 +217,7 @@ def ynab_push_transactions(transactions: List[Transaction], ynab_settings: YNABS
         transaction_api = ynab.TransactionsApi(api_client)
         ptw = ynab.PostTransactionsWrapper(transactions=ynab_transactions)
         out = transaction_api.create_transaction(
-            ynab_settings.budget_id,
+            Settings.get().config.get('YNAB', 'budget_id'),
             ptw
         )
         print(f"Created {len(out.data.transaction_ids)} transactions in YNAB")
