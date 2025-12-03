@@ -37,10 +37,11 @@ from typing import List
 from pytr.dl import Timeline, TransactionExporter, Event
 from pytr.account import login
 import ynab
+import configparser
 
 
 CONFIG_DIR = os.path.expanduser("~/.config/tr2ynab")
-LAST_IMPORT_FILE = os.path.join(CONFIG_DIR, "last_import_timestamp.txt")
+
 
 
 class PyTRExit(Exception):
@@ -74,6 +75,41 @@ class Transaction:  # pylint: disable=too-many-instance-attributes
         self.Note = self.Note.replace("Card Payment - ", "")
 
 
+class Settings:
+    """Class to hold YNAB settings."""
+    _instance = None
+    config: configparser.ConfigParser
+    config_path: Path
+
+    def __init__(self, config_path: str) -> None:
+        if Settings._instance is not None:
+            raise RuntimeError("Use Settings.get() instead of calling Settings() directly")
+
+        path = Path(config_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Config file not found: {path}")
+
+        parser = configparser.ConfigParser()
+        parser.read(config_path)
+
+        self.config = parser
+        self.config_path = path
+
+    @classmethod
+    def load(cls, config_path: str) -> 'Settings':
+        """Load settings from the config file."""
+        if cls._instance is None:
+            cls._instance = cls(config_path)
+        return cls._instance
+
+    @classmethod
+    def get(cls) -> 'Settings':
+        """Get the singleton instance of Settings."""
+        if cls._instance is None:
+            raise RuntimeError("Settings not loaded. Call Settings.load(config_path) first.")
+        return cls._instance
+
+
 @dataclass
 class YNABSettings:
     """YNAB settings."""
@@ -84,19 +120,21 @@ class YNABSettings:
 
 def get_last_import_timestamp() -> datetime.datetime:
     """Retrieve the last import timestamp from the config file."""
-    if not os.path.exists(LAST_IMPORT_FILE):
+    last_import_file = Path(Settings.get().config.get('main', 'last_import_file'))
+
+    if not last_import_file.exists():
         # Default to 7 days ago if no timestamp is found
         return datetime.datetime.now() - datetime.timedelta(days=7)
-    with open(LAST_IMPORT_FILE, "r", encoding="utf-8") as f:
+    with open(last_import_file, "r", encoding="utf-8") as f:
         timestamp = f.read().strip()
         return datetime.datetime.fromisoformat(timestamp)
 
 
 def save_last_import_timestamp(timestamp: datetime.datetime) -> None:
     """Save the last import timestamp to the config file."""
-    if not os.path.exists(CONFIG_DIR):
-        os.makedirs(CONFIG_DIR)
-    with open(LAST_IMPORT_FILE, "w", encoding="utf-8") as f:
+    last_import_file = Path(Settings.get().config.get('main', 'last_import_file'))
+    last_import_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(last_import_file, "w", encoding="utf-8") as f:
         f.write(timestamp.isoformat())
 
 

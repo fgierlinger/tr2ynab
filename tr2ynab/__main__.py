@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 from configparser import ConfigParser
 import os
 from tr2ynab import ynab_push_transactions, tr_load_transactions
-from tr2ynab.tr2ynab import YNABSettings
+from tr2ynab.tr2ynab import Settings, YNABSettings
 from ._version import __version__
 
 
@@ -21,6 +21,8 @@ def main():
     config = ConfigParser()
     print(f"Reading config file from {os.path.expanduser(args.config)}")
     config.read(os.path.expanduser(args.config))
+
+    Settings.load(os.path.expanduser(args.config))
 
     ynab_settings = YNABSettings(
         budget_id=config.get("YNAB", "budget_id"),
