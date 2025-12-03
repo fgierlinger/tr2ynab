@@ -1,5 +1,6 @@
 # pylint: disable=missing-module-docstring,missing-function-docstring
 from argparse import ArgumentParser
+import logging
 import os
 from tr2ynab import ynab_push_transactions, tr_load_transactions
 from tr2ynab.tr2ynab import Settings
@@ -17,8 +18,16 @@ def main():
 
     args = parser.parse_args()
 
-    print(f"Reading config file from {os.path.expanduser(args.config)}")
+    logger = logging.getLogger()
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
+
+    logger.info("Reading config file from %s", os.path.expanduser(args.config))
     Settings.load(os.path.expanduser(args.config))
+    logger.setLevel(Settings.get().config.get('main', 'log_level', fallback='INFO'))
 
     transactions = tr_load_transactions()
 

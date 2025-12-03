@@ -37,6 +37,7 @@ from pytr.dl import Timeline, TransactionExporter, Event
 from pytr.account import login
 import ynab
 import configparser
+import logging
 
 
 class PyTRExit(Exception):
@@ -105,12 +106,16 @@ class Settings:
         return cls._instance
 
 
+logger = logging.getLogger("tr2ynab")
+
+
 def get_last_import_timestamp() -> datetime.datetime:
     """Retrieve the last import timestamp from the config file."""
     last_import_file = Path(Settings.get().config.get('main', 'last_import_file'))
-
+    logger.info("Reading last import timestamp from: %s", last_import_file)
     if not last_import_file.exists():
         # Default to 7 days ago if no timestamp is found
+        logger.info("No last import timestamp found, defaulting to 7 days ago")
         return datetime.datetime.now() - datetime.timedelta(days=7)
     with open(last_import_file, "r", encoding="utf-8") as f:
         timestamp = f.read().strip()
@@ -123,12 +128,13 @@ def save_last_import_timestamp(timestamp: datetime.datetime) -> None:
     last_import_file.parent.mkdir(parents=True, exist_ok=True)
     with open(last_import_file, "w", encoding="utf-8") as f:
         f.write(timestamp.isoformat())
+    logger.info("Saved last import timestamp: %s", timestamp.isoformat())
 
 
 def tr_load_transactions(lang: str = "en") -> List[Transaction]:
     """Load transactions from Trade Republic."""
     last_import_timestamp = get_last_import_timestamp()
-    print(f"Fetching transactions since: {last_import_timestamp}")
+    logger.info("Fetching transactions since: %s", last_import_timestamp.isoformat())
 
     tempdir = Path(tempfile.mkdtemp())
     tl = Timeline(
@@ -165,7 +171,7 @@ def tr_load_transactions(lang: str = "en") -> List[Transaction]:
 
     # Cleanup tempdir
     if tempdir != ".":
-        print(f"Cleaning up tempdir: {tempdir}")
+        logger.debug("Cleaning up tempdir: %s", tempdir)
         shutil.rmtree(tempdir)
 
     return data
@@ -220,4 +226,4 @@ def ynab_push_transactions(transactions: List[Transaction]) -> None:
             Settings.get().config.get('YNAB', 'budget_id'),
             ptw
         )
-        print(f"Created {len(out.data.transaction_ids)} transactions in YNAB")
+        logger.info("Created %s transactions in YNAB", len(out.data.transaction_ids))
