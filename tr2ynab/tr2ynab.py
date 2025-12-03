@@ -201,6 +201,10 @@ def convert_value_string_to_milliunits(value: str) -> int:
 
 def ynab_push_transactions(transactions: List[Transaction]) -> None:
     """Push transactions to YNAB."""
+    if len(transactions) == 0:
+        logger.info("No new transactions to push to YNAB.")
+        return
+
     configuration = ynab.Configuration(
         access_token=Settings.get().config.get('YNAB', 'access_token')
     )
