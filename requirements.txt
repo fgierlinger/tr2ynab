@@ -1,8 +1,2 @@
-# pytr's dl_loop has a bug with the latest changes of trade republic's API
-# changes (described in issue https://github.com/pytr-org/pytr/issues/253). The
-# export_transactions method has been refactored to export the files, but no
-# release has been issued yet. Therefore we point to the specific commit that
-# includes the fix.
-#pytr ~= 0.4.2
-pytr @ git+https://github.com/pytr-org/pytr@f30b2e9
+pytr ~= 0.4.4
 ynab ~= 1.4.0
