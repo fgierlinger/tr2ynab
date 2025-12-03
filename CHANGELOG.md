@@ -1,3 +1,9 @@
+## v1.0.4 (2025-12-03)
+
+### Fix
+
+- update pytr dependency to version 0.4.4
+
 ## v1.0.3 (2025-11-23)
 
 ### Fix
