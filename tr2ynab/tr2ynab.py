@@ -166,9 +166,6 @@ def tr_load_transactions(lang: str = "en") -> List[Transaction]:
     with open(account_transactions_file, "r", encoding='utf-8') as f:
         data = [Transaction(**(json.loads(line))) for line in f.readlines()]
 
-    # Save the current timestamp as the last import timestamp
-    save_last_import_timestamp(datetime.datetime.now())
-
     # Cleanup tempdir
     if tempdir != ".":
         logger.debug("Cleaning up tempdir: %s", tempdir)
@@ -227,3 +224,6 @@ def ynab_push_transactions(transactions: List[Transaction]) -> None:
             ptw
         )
         logger.info("Created %s transactions in YNAB", len(out.data.transaction_ids))
+
+    # Save the current timestamp as the last import timestamp
+    save_last_import_timestamp(datetime.datetime.now())
