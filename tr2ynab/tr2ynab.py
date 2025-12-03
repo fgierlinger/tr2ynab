@@ -32,15 +32,12 @@ import builtins
 from pathlib import Path
 import shutil
 import tempfile
-import os
 from typing import List
 from pytr.dl import Timeline, TransactionExporter, Event
 from pytr.account import login
 import ynab
-
-
-CONFIG_DIR = os.path.expanduser("~/.config/tr2ynab")
-LAST_IMPORT_FILE = os.path.join(CONFIG_DIR, "last_import_timestamp.txt")
+import configparser
+import logging
 
 
 class PyTRExit(Exception):
@@ -74,42 +71,76 @@ class Transaction:  # pylint: disable=too-many-instance-attributes
         self.Note = self.Note.replace("Card Payment - ", "")
 
 
-@dataclass
-class YNABSettings:
-    """YNAB settings."""
-    budget_id: str
-    access_token: str
-    account_id: str
+class Settings:
+    """Class to hold YNAB settings."""
+    _instance = None
+    config: configparser.ConfigParser
+    config_path: Path
+
+    def __init__(self, config_path: str) -> None:
+        if Settings._instance is not None:
+            raise RuntimeError("Use Settings.get() instead of calling Settings() directly")
+
+        path = Path(config_path)
+        if not path.exists():
+            raise FileNotFoundError(f"Config file not found: {path}")
+
+        parser = configparser.ConfigParser()
+        parser.read(config_path)
+
+        self.config = parser
+        self.config_path = path
+
+    @classmethod
+    def load(cls, config_path: str) -> 'Settings':
+        """Load settings from the config file."""
+        if cls._instance is None:
+            cls._instance = cls(config_path)
+        return cls._instance
+
+    @classmethod
+    def get(cls) -> 'Settings':
+        """Get the singleton instance of Settings."""
+        if cls._instance is None:
+            raise RuntimeError("Settings not loaded. Call Settings.load(config_path) first.")
+        return cls._instance
+
+
+logger = logging.getLogger("tr2ynab")
 
 
 def get_last_import_timestamp() -> datetime.datetime:
     """Retrieve the last import timestamp from the config file."""
-    if not os.path.exists(LAST_IMPORT_FILE):
+    last_import_file = Path(Settings.get().config.get('main', 'last_import_file'))
+    logger.info("Reading last import timestamp from: %s", last_import_file)
+    if not last_import_file.exists():
         # Default to 7 days ago if no timestamp is found
+        logger.info("No last import timestamp found, defaulting to 7 days ago")
         return datetime.datetime.now() - datetime.timedelta(days=7)
-    with open(LAST_IMPORT_FILE, "r", encoding="utf-8") as f:
+    with open(last_import_file, "r", encoding="utf-8") as f:
         timestamp = f.read().strip()
         return datetime.datetime.fromisoformat(timestamp)
 
 
 def save_last_import_timestamp(timestamp: datetime.datetime) -> None:
     """Save the last import timestamp to the config file."""
-    if not os.path.exists(CONFIG_DIR):
-        os.makedirs(CONFIG_DIR)
-    with open(LAST_IMPORT_FILE, "w", encoding="utf-8") as f:
+    last_import_file = Path(Settings.get().config.get('main', 'last_import_file'))
+    last_import_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(last_import_file, "w", encoding="utf-8") as f:
         f.write(timestamp.isoformat())
+    logger.info("Saved last import timestamp: %s", timestamp.isoformat())
 
 
-def tr_load_transactions(phone_no: str, pin: str, lang: str = "en") -> List[Transaction]:
+def tr_load_transactions(lang: str = "en") -> List[Transaction]:
     """Load transactions from Trade Republic."""
     last_import_timestamp = get_last_import_timestamp()
-    print(f"Fetching transactions since: {last_import_timestamp}")
+    logger.info("Fetching transactions since: %s", last_import_timestamp.isoformat())
 
     tempdir = Path(tempfile.mkdtemp())
     tl = Timeline(
         login(
-            phone_no=phone_no,
-            pin=pin,
+            phone_no=Settings.get().config.get('TradeRepublic', 'phone_no'),
+            pin=Settings.get().config.get('TradeRepublic', 'pin'),
             store_credentials=True
         ),
         output_path=tempdir,
@@ -135,12 +166,9 @@ def tr_load_transactions(phone_no: str, pin: str, lang: str = "en") -> List[Tran
     with open(account_transactions_file, "r", encoding='utf-8') as f:
         data = [Transaction(**(json.loads(line))) for line in f.readlines()]
 
-    # Save the current timestamp as the last import timestamp
-    save_last_import_timestamp(datetime.datetime.now())
-
     # Cleanup tempdir
     if tempdir != ".":
-        print(f"Cleaning up tempdir: {tempdir}")
+        logger.debug("Cleaning up tempdir: %s", tempdir)
         shutil.rmtree(tempdir)
 
     return data
@@ -171,16 +199,20 @@ def convert_value_string_to_milliunits(value: str) -> int:
     return int(whole) * 1000 + int(fraction)
 
 
-def ynab_push_transactions(transactions: List[Transaction], ynab_settings: YNABSettings) -> None:
+def ynab_push_transactions(transactions: List[Transaction]) -> None:
     """Push transactions to YNAB."""
+    if len(transactions) == 0:
+        logger.info("No new transactions to push to YNAB.")
+        return
+
     configuration = ynab.Configuration(
-        access_token=ynab_settings.access_token
+        access_token=Settings.get().config.get('YNAB', 'access_token')
     )
     ynab_transactions = []
     for transaction in transactions:
         ynab_transactions.append(ynab.NewTransaction(
-            budget_id=ynab_settings.budget_id,
-            account_id=ynab_settings.account_id,
+            budget_id=Settings.get().config.get('YNAB', 'budget_id'),
+            account_id=Settings.get().config.get('YNAB', 'account_id'),
             date=transaction.Date.strftime("%Y-%m-%d"),
             amount=convert_value_string_to_milliunits(transaction.Value),
             payee_name=transaction.Note,
@@ -192,7 +224,10 @@ def ynab_push_transactions(transactions: List[Transaction], ynab_settings: YNABS
         transaction_api = ynab.TransactionsApi(api_client)
         ptw = ynab.PostTransactionsWrapper(transactions=ynab_transactions)
         out = transaction_api.create_transaction(
-            ynab_settings.budget_id,
+            Settings.get().config.get('YNAB', 'budget_id'),
             ptw
         )
-        print(f"Created {len(out.data.transaction_ids)} transactions in YNAB")
+        logger.info("Created %s transactions in YNAB", len(out.data.transaction_ids))
+
+    # Save the current timestamp as the last import timestamp
+    save_last_import_timestamp(datetime.datetime.now())

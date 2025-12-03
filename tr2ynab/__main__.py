@@ -1,9 +1,9 @@
 # pylint: disable=missing-module-docstring,missing-function-docstring
 from argparse import ArgumentParser
-from configparser import ConfigParser
+import logging
 import os
 from tr2ynab import ynab_push_transactions, tr_load_transactions
-from tr2ynab.tr2ynab import YNABSettings
+from tr2ynab.tr2ynab import Settings
 from ._version import __version__
 
 
@@ -18,22 +18,20 @@ def main():
 
     args = parser.parse_args()
 
-    config = ConfigParser()
-    print(f"Reading config file from {os.path.expanduser(args.config)}")
-    config.read(os.path.expanduser(args.config))
+    logger = logging.getLogger()
+    if not logger.handlers:
+        handler = logging.StreamHandler()
+        formatter = logging.Formatter("%(asctime)s %(levelname)s [%(name)s] %(message)s")
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
-    ynab_settings = YNABSettings(
-        budget_id=config.get("YNAB", "budget_id"),
-        access_token=config.get("YNAB", "access_token"),
-        account_id=config.get("YNAB", "account_id"),
-    )
+    logger.info("Reading config file from %s", os.path.expanduser(args.config))
+    Settings.load(os.path.expanduser(args.config))
+    logger.setLevel(Settings.get().config.get('main', 'log_level', fallback='INFO'))
 
-    transactions = tr_load_transactions(
-        phone_no=config.get("TradeRepublic", "phone_no"),
-        pin=config.get("TradeRepublic", "pin"),
-    )
+    transactions = tr_load_transactions()
 
-    ynab_push_transactions(transactions, ynab_settings)
+    ynab_push_transactions(transactions)
 
 
 if __name__ == "__main__":

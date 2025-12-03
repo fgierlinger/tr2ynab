@@ -1,3 +1,17 @@
+## v1.1.0 (2025-12-03)
+
+### Feat
+
+- move last import timestamp saving to ynab_push_transactions
+- enhance logging by using logging module
+- refactor ynab methods to use Settings for YNAB credentials
+- refactor transaction loading to use Settings for TradeRepublic credentials
+- implement Settings class for configuration management and update tests
+
+### Fix
+
+- add check for empty transactions in ynab_push_transactions #7
+
 ## v1.0.4 (2025-12-03)
 
 ### Fix
