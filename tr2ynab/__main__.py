@@ -30,10 +30,7 @@ def main():
         account_id=config.get("YNAB", "account_id"),
     )
 
-    transactions = tr_load_transactions(
-        phone_no=config.get("TradeRepublic", "phone_no"),
-        pin=config.get("TradeRepublic", "pin"),
-    )
+    transactions = tr_load_transactions()
 
     ynab_push_transactions(transactions, ynab_settings)
 

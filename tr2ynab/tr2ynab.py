@@ -138,7 +138,7 @@ def save_last_import_timestamp(timestamp: datetime.datetime) -> None:
         f.write(timestamp.isoformat())
 
 
-def tr_load_transactions(phone_no: str, pin: str, lang: str = "en") -> List[Transaction]:
+def tr_load_transactions(lang: str = "en") -> List[Transaction]:
     """Load transactions from Trade Republic."""
     last_import_timestamp = get_last_import_timestamp()
     print(f"Fetching transactions since: {last_import_timestamp}")
@@ -146,8 +146,8 @@ def tr_load_transactions(phone_no: str, pin: str, lang: str = "en") -> List[Tran
     tempdir = Path(tempfile.mkdtemp())
     tl = Timeline(
         login(
-            phone_no=phone_no,
-            pin=pin,
+            phone_no=Settings.get().config.get('TradeRepublic', 'phone_no'),
+            pin=Settings.get().config.get('TradeRepublic', 'pin'),
             store_credentials=True
         ),
         output_path=tempdir,

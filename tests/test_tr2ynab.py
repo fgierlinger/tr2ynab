@@ -32,10 +32,14 @@ def test_config_load():
 last_import_file = ./last_import_timestamp.txt
 
 [TradeRepublic]
+phone_no = +491234567890
+pin = 1234
 
 [YNAB]
 
 """)
     Settings.load(tempfile)
     assert Settings.get().config['main']['last_import_file'] == "./last_import_timestamp.txt"
+    assert Settings.get().config.get('TradeRepublic', 'phone_no') == "+491234567890"
+    assert Settings.get().config.get('TradeRepublic', 'pin') == "1234"
     os.remove(tempfile)
