@@ -1,3 +1,9 @@
+## v1.1.2 (2026-03-22)
+
+### Fix
+
+- pin pytr to 0.4.4 because of errors in newer versions
+
 ## v1.1.1 (2026-03-22)
 
 ### Fix
