@@ -10,7 +10,7 @@ authors = [
     { name = "Frédéric Gierlinger", email = "frederic.gierlinger@gmail.com" }
 ]
 dependencies = [
-    "pytr==0.4.4",
+    "pytr==0.4.6",
     "ynab"
 ]
 [project.scripts]
