@@ -61,7 +61,9 @@ class Transaction:  # pylint: disable=too-many-instance-attributes
     Value: float  # pylint: disable=invalid-name
     Note: str  # pylint: disable=invalid-name
     ISIN: str | None  # pylint: disable=invalid-name
+    ISIN2: str | None  # pylint: disable=invalid-name
     Shares: str | None  # pylint: disable=invalid-name
+    Shares2: str | None  # pylint: disable=invalid-name
     Fees: str | None  # pylint: disable=invalid-name
     Taxes: str | None  # pylint: disable=invalid-name
 
