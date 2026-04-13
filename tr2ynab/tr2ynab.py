@@ -133,7 +133,7 @@ def save_last_import_timestamp(timestamp: datetime.datetime) -> None:
     logger.info("Saved last import timestamp: %s", timestamp.isoformat())
 
 
-def tr_load_transactions(lang: str = "en") -> List[Transaction]:
+def tr_load_transactions(waf_token: str, lang: str = "en") -> List[Transaction]:
     """Load transactions from Trade Republic."""
     last_import_timestamp = get_last_import_timestamp()
     logger.info("Fetching transactions since: %s", last_import_timestamp.isoformat())
@@ -143,7 +143,8 @@ def tr_load_transactions(lang: str = "en") -> List[Transaction]:
         login(
             phone_no=Settings.get().config.get('TradeRepublic', 'phone_no'),
             pin=Settings.get().config.get('TradeRepublic', 'pin'),
-            store_credentials=True
+            store_credentials=True,
+            waf_token=waf_token
         ),
         output_path=tempdir,
         not_before=last_import_timestamp.timestamp()
