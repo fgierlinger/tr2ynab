@@ -12,6 +12,9 @@ def main():
     parser.add_argument("--config",
                         default="~/.config/tr2ynab/tr2ynab.cfg",
                         help="Path to the config file")
+    parser.add_argument("--waf-token",
+                        required=True,
+                        help="WAF token for authentication. See https://github.com/fgierlinger/tr2ynab/issues/19 for details.")
     parser.add_argument("--version",
                         action="version",
                         version=f"%(prog)s v{__version__}")
@@ -29,7 +32,7 @@ def main():
     Settings.load(os.path.expanduser(args.config))
     logger.setLevel(Settings.get().config.get('main', 'log_level', fallback='INFO'))
 
-    transactions = tr_load_transactions()
+    transactions = tr_load_transactions(args.waf_token)
 
     ynab_push_transactions(transactions)
 
