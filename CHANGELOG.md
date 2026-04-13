@@ -1,3 +1,9 @@
+## v1.1.4 (2026-04-13)
+
+### Fix
+
+- add --waf-token parameter to fix currently broken automated login (#20)
+
 ## v1.1.3 (2026-03-29)
 
 ### Fix
