@@ -1,3 +1,9 @@
+## v1.1.5 (2026-11-01)
+
+### Fix
+
+- use pytr 0.4.10 v2 login and drop --waf-token (#26)
+
 ## v1.1.4 (2026-04-13)
 
 ### Fix
